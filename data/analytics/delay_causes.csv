@@ -1,0 +1,6 @@
+delay_cause,total_delay_minutes,affected_flights,percentage_share
+Carrier Delay (Airline Operation/Crew),2510886.0,52600,36.16
+Late Aircraft Delay (Ripple Effect),2410759.0,43090,34.72
+NAS Delay (Air Traffic Control / Airport),1381827.0,51188,19.9
+Weather Delay (Extreme Weather),629972.0,7735,9.07
+Security Delay (Terminal / Screening),10550.0,506,0.15

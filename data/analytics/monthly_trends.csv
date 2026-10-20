@@ -1,0 +1,2 @@
+month_num,month_name,total_flights,delayed_flights,delay_rate_pct,avg_arr_delay_min,avg_dep_delay_min,cancelled_flights
+1,January,539746,94824,18.12,3.75,10.28,16311

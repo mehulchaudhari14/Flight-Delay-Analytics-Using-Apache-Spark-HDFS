@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # HDFS NameNode Service
+  # ==========================================
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: flight_namenode
+    restart: unless-stopped
+    ports:
+      - "9870:9870"   # HDFS Web UI
+      - "9000:9000"   # HDFS RPC Port
+    environment:
+      - CLUSTER_NAME=flight_delay_cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_permissions=false
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./data:/data
+    networks:
+      - flight_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # HDFS DataNode Service
+  # ==========================================
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: flight_datanode
+    restart: unless-stopped
+    ports:
+      - "9864:9864"   # DataNode Web UI
+    environment:
+      - SERVICE_PRECONDITION=namenode:9000 namenode:9870
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_permissions=false
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    depends_on:
+      namenode:
+        condition: service_healthy
+    networks:
+      - flight_network
+
+  # ==========================================
+  # Apache Spark Master Service
+  # ==========================================
+  spark-master:
+    image: apache/spark:latest
+    container_name: spark-master
+    restart: unless-stopped
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - "8085:8080"   # Spark Master Web UI
+      - "7077:7077"   # Spark Master RPC
+    environment:
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_MODE=master
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
+      - ./data:/data
+      - ./config:/opt/spark_config
+    depends_on:
+      namenode:
+        condition: service_healthy
+    networks:
+      - flight_network
+
+  # ==========================================
+  # Apache Spark Worker Service
+  # ==========================================
+  spark-worker:
+    image: apache/spark:latest
+    container_name: spark-worker
+    restart: unless-stopped
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    ports:
+      - "8086:8081"   # Spark Worker Web UI
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
+      - ./data:/data
+    depends_on:
+      - spark-master
+    networks:
+      - flight_network
+
+  # ==========================================
+  # Streamlit Interactive Dashboard
+  # ==========================================
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flight_dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"   # Streamlit Dashboard UI
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - HDFS_NAMENODE_URL=http://namenode:9870
+      - SPARK_MASTER_URL=http://spark-master:8080
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./data:/app/data
+    depends_on:
+      namenode:
+        condition: service_healthy
+    networks:
+      - flight_network
+
+volumes:
+  hadoop_namenode:
+    name: flight_hadoop_namenode
+  hadoop_datanode:
+    name: flight_hadoop_datanode
+
+networks:
+  flight_network:
+    name: flight_network
+    driver: bridge

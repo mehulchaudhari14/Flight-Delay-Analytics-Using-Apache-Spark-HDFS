@@ -1,0 +1,2 @@
+total_flights,completed_flights,delayed_flights,delayed_percentage,avg_arrival_delay,avg_departure_delay,max_arrival_delay,cancelled_flights,cancellation_rate,diverted_flights,diversion_rate,total_distance_miles
+539746,523435,94824,18.12,3.75,10.28,3282.0,16311,3.02,1166,0.22,4.55117995E8

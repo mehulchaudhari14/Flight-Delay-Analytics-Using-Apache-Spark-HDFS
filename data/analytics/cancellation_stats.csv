@@ -1,0 +1,5 @@
+cancellation_reason,flight_count,pct_of_cancellations
+Weather Cancellation (B),14327,87.84
+Carrier Cancellation (A),1634,10.02
+NAS / Air Traffic Cancellation (C),342,2.10
+Security Cancellation (D),8,0.05
